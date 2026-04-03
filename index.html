@@ -3,84 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chercher par ID</title>
+    <title>Boutique de Smartwatches</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .id-item { cursor: pointer; transition: 0.2s; border: 1px solid #ddd; border-radius: 5px; margin: 5px; padding: 10px; display: inline-block; width: 80px; text-align: center; background: white; }
-        .id-item:hover { background-color: #0d6efd; color: white; transform: scale(1.1); }
-        #detailCard { display: none; }
-        .id-container { max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 10px; background: #fff; }
+        .card { transition: 0.3s; cursor: pointer; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .card-img-top { height: 180px; object-fit: contain; padding: 10px; }
     </style>
 </head>
 <body class="bg-light">
 
 <div class="container my-5">
-    <div class="row">
-        <div class="col-md-5">
-            <div class="card p-4 shadow-sm h-100">
-                <h4 class="mb-3 text-primary">Liste des IDs</h4>
-                <p class="text-muted small">Cliquez sur un ID pour voir les détails :</p>
-                <div id="idList" class="id-container text-center">
-                    <div class="spinner-border text-primary" role="status"></div>
-                </div>
-            </div>
+    <h2 class="text-center mb-5">Nos Smartwatches</h2>
+    <div id="watchContainer" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
         </div>
+</div>
 
-        <div class="col-md-7">
-            <div id="detailCard" class="card shadow p-4 h-100">
-                <div class="text-center">
-                    <img id="mImage" src="" class="img-fluid mb-3" style="max-height: 250px; border-radius: 10px;">
-                    <h3 id="mName" class="text-dark"></h3>
-                    <h4 id="mPrice" class="text-success fw-bold"></h4>
-                    <div id="mWater" class="badge rounded-pill p-2 mb-3"></div>
-                    <hr>
-                    <p class="text-muted">ID Produit: <span id="mId" class="badge bg-secondary"></span></p>
-                </div>
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mName">Nom du produit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div id="noSelection" class="alert alert-info text-center h-100 d-flex align-items-center justify-content-center">
-                Veuillez cliquer sur un ID pour afficher les détails de la montre.
+            <div class="modal-body text-center">
+                <img id="mImage" src="" class="img-fluid mb-3" style="max-height: 250px;">
+                <h4 id="mPrice" class="text-success"></h4>
+                <p id="mWater" class="badge rounded-pill"></p>
+                <hr>
+                <p>ID Produit: <span id="mId" class="fw-bold"></span></p>
             </div>
         </div>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    let allWatches = []; 
+    let allWatches = []; // Variable bach n-stockiw fiha l-data
 
     $.ajax({
         url: 'https://corsproxy.io/?' + encodeURIComponent('https://apiyes.net/WatchAPI/readAll.php'),
         method: 'GET',
         success: function(response) {
             allWatches = (typeof response === 'string') ? JSON.parse(response) : response;
-            let listContainer = $('#idList');
-            listContainer.empty();
+            let container = $('#watchContainer');
+            container.empty();
 
             $.each(allWatches, function(index, watch) {
-                listContainer.append(`<div class="id-item shadow-sm fw-bold" onclick="showInfo(${watch.id})">${watch.id}</div>`);
+                let cardHTML = `
+                    <div class="col">
+                        <div class="card shadow-sm h-100 p-2">
+                            <img src="${watch.imageURL}" class="card-img-top" onerror="this.src='https://via.placeholder.com/150'">
+                            <div class="card-body text-center">
+                                <h6 class="card-title">${watch.name}</h6>
+                                <button onclick="showDetails(${watch.id})" class="btn btn-sm btn-primary mt-2">Détails</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.append(cardHTML);
             });
         }
     });
 
-    window.showInfo = function(id) {
+    // Fonction bach n-affichiw les détails
+    window.showDetails = function(id) {
+        // N-qalbo 3la l-montre li 3andha had l-id
         let watch = allWatches.find(w => w.id == id);
 
         if (watch) {
+            // N-3ammrou l-Modal b l-ma3loumat
             $('#mName').text(watch.name);
             $('#mPrice').text(watch.price + " $");
-            $('#mImage').attr('src', watch.imageURL).attr('onerror', "this.src='https://via.placeholder.com/200?text=No+Image'");
+            $('#mImage').attr('src', watch.imageURL);
             $('#mId').text(watch.id);
 
+            // Check l-étanchéité
             if(watch.isWaterResistant) {
-                $('#mWater').text("Résistant à l'eau").removeClass('bg-danger').addClass('bg-info');
+                $('#mWater').text("Résistant à l'eau").removeClass('bg-danger').addClass('bg-success');
             } else {
-                $('#mWater').text("Non résistant").removeClass('bg-info').addClass('bg-danger');
+                $('#mWater').text("Non résistant").removeClass('bg-success').addClass('bg-danger');
             }
 
-            $('#noSelection').hide();
-            $('#detailCard').fadeIn();
+            // N-biyno l-Modal
+            var myModal = new bootstrap.Modal(document.getElementById('detailModal'));
+            myModal.show();
         }
     };
 });
