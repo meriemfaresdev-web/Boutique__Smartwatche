@@ -3,24 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boutique de Smartwatches</title>
+    <title>Chercher par ID</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .card { height: 100%; transition: 0.3s; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .card-img-top { height: 200px; object-fit: contain; padding: 15px; background: #f8f9fa; }
-        .badge-water { position: absolute; top: 10px; right: 10px; }
+        .id-item { cursor: pointer; transition: 0.2s; border: 1px solid #ddd; border-radius: 5px; margin: 5px; padding: 10px; display: inline-block; width: 80px; text-align: center; background: white; }
+        .id-item:hover { background-color: #0d6efd; color: white; transform: scale(1.1); }
+        #detailCard { display: none; }
+        .id-container { max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #eee; border-radius: 10px; background: #fff; }
     </style>
 </head>
 <body class="bg-light">
 
 <div class="container my-5">
-    <h2 class="text-center mb-5">Nos Smartwatches</h2>
-    
-    <div id="watchContainer" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
-        <div class="text-center w-100">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p>Chargement des produits...</p>
+    <div class="row">
+        <div class="col-md-5">
+            <div class="card p-4 shadow-sm h-100">
+                <h4 class="mb-3 text-primary">Liste des IDs</h4>
+                <p class="text-muted small">Cliquez sur un ID pour voir les détails :</p>
+                <div id="idList" class="id-container text-center">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div id="detailCard" class="card shadow p-4 h-100">
+                <div class="text-center">
+                    <img id="mImage" src="" class="img-fluid mb-3" style="max-height: 250px; border-radius: 10px;">
+                    <h3 id="mName" class="text-dark"></h3>
+                    <h4 id="mPrice" class="text-success fw-bold"></h4>
+                    <div id="mWater" class="badge rounded-pill p-2 mb-3"></div>
+                    <hr>
+                    <p class="text-muted">ID Produit: <span id="mId" class="badge bg-secondary"></span></p>
+                </div>
+            </div>
+            <div id="noSelection" class="alert alert-info text-center h-100 d-flex align-items-center justify-content-center">
+                Veuillez cliquer sur un ID pour afficher les détails de la montre.
+            </div>
         </div>
     </div>
 </div>
@@ -29,41 +48,41 @@
 
 <script>
 $(document).ready(function() {
+    let allWatches = []; 
+
     $.ajax({
         url: 'https://corsproxy.io/?' + encodeURIComponent('https://apiyes.net/WatchAPI/readAll.php'),
         method: 'GET',
         success: function(response) {
-            let watches = (typeof response === 'string') ? JSON.parse(response) : response;
-            let container = $('#watchContainer');
-            container.empty(); 
+            allWatches = (typeof response === 'string') ? JSON.parse(response) : response;
+            let listContainer = $('#idList');
+            listContainer.empty();
 
-            $.each(watches, function(index, watch) {
-                let waterBadge = watch.isWaterResistant 
-                    ? '<span class="badge bg-info badge-water">Waterproof</span>' 
-                    : '';
-
-                let cardHTML = `
-                    <div class="col">
-                        <div class="card shadow-sm h-100">
-                            ${waterBadge}
-                            <img src="${watch.imageURL}" class="card-img-top" alt="${watch.name}" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title">${watch.name}</h5>
-                                <p class="card-text text-success fw-bold fs-5">${watch.price} $</p>
-                                <div class="mt-auto">
-                                    <button class="btn btn-outline-primary w-100">Détails</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.append(cardHTML);
+            $.each(allWatches, function(index, watch) {
+                listContainer.append(`<div class="id-item shadow-sm fw-bold" onclick="showInfo(${watch.id})">${watch.id}</div>`);
             });
-        },
-        error: function() {
-            $('#watchContainer').html('<div class="alert alert-danger w-100 text-center">Erreur de chargement des données.</div>');
         }
     });
+
+    window.showInfo = function(id) {
+        let watch = allWatches.find(w => w.id == id);
+
+        if (watch) {
+            $('#mName').text(watch.name);
+            $('#mPrice').text(watch.price + " $");
+            $('#mImage').attr('src', watch.imageURL).attr('onerror', "this.src='https://via.placeholder.com/200?text=No+Image'");
+            $('#mId').text(watch.id);
+
+            if(watch.isWaterResistant) {
+                $('#mWater').text("Résistant à l'eau").removeClass('bg-danger').addClass('bg-info');
+            } else {
+                $('#mWater').text("Non résistant").removeClass('bg-info').addClass('bg-danger');
+            }
+
+            $('#noSelection').hide();
+            $('#detailCard').fadeIn();
+        }
+    };
 });
 </script>
 
